@@ -4,7 +4,7 @@ import "./Footer.css"
 function Footer() {
   return (
     <div className="footer">
-      <p className="footer-text">© 2024 UAB "SOTI Union"</p>
+      <p className="footer-text">© 2025 UAB "SOTI Union"</p>
     </div>
   )
 }
