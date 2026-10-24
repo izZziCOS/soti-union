@@ -1,0 +1,85 @@
+---
+import { Image } from "astro:assets";
+import Icon from "~/components/Icon.astro";
+import { company } from "~/data/company";
+import { localizePath, routes, telHref, useTranslations, type Locale } from "~/i18n";
+import logo from "~/assets/logo.png";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const year = new Date().getFullYear();
+
+const links = [
+  { href: routes.home, label: t.nav.home },
+  { href: routes.about, label: t.nav.about },
+  { href: routes.references, label: t.nav.references },
+  { href: routes.career, label: t.nav.career },
+  { href: routes.contact, label: t.nav.contact },
+];
+---
+
+<footer class="bg-brand-950 text-slate-300">
+  <div class="container-page grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1.5fr]">
+    <div class="max-w-sm">
+      <Image
+        src={logo}
+        alt="SOTI Union"
+        width={115}
+        height={56}
+        class="h-12 w-auto brightness-0 invert"
+      />
+      <p class="mt-5 text-sm leading-relaxed text-slate-400">{t.footer.about}</p>
+    </div>
+
+    <nav aria-label={t.footer.navigation}>
+      <h2 class="text-sm font-semibold tracking-wide text-white">{t.footer.navigation}</h2>
+      <ul class="mt-4 space-y-2.5 text-sm">
+        {links.map(({ href, label }) => (
+          <li>
+            <a href={localizePath(href, locale)} class="transition hover:text-spark-400">
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div>
+      <h2 class="text-sm font-semibold tracking-wide text-white">{t.footer.contact}</h2>
+      <ul class="mt-4 space-y-3 text-sm">
+        <li class="flex gap-3">
+          <Icon name="pin" class="mt-0.5 size-4 shrink-0 text-spark-400" />
+          <span>{`${company.address.street}, ${company.address.postalCode} ${company.address.city}, ${t.common.country}`}</span>
+        </li>
+        <li class="flex gap-3">
+          <Icon name="mail" class="mt-0.5 size-4 shrink-0 text-spark-400" />
+          <a href={`mailto:${company.email}`} class="transition hover:text-spark-400">
+            {company.email}
+          </a>
+        </li>
+        <li class="flex gap-3">
+          <Icon name="phone" class="mt-0.5 size-4 shrink-0 text-spark-400" />
+          <a href={telHref(company.phones.director)} class="transition hover:text-spark-400">
+            {company.phones.director}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="border-t border-white/10">
+    <div class="container-page flex flex-col gap-2 py-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <p>
+        © {year} {company.legalName}. {t.footer.rights}
+      </p>
+      <p>
+        {t.contact.labels.companyCode}: {company.companyCode} · {t.contact.labels.vatCode}:{" "}
+        {company.vatCode}
+      </p>
+    </div>
+  </div>
+</footer>

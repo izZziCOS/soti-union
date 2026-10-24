@@ -1,0 +1,107 @@
+---
+import Icon from "~/components/Icon.astro";
+import PageHeader from "~/components/PageHeader.astro";
+import { company } from "~/data/company";
+import { localeStaticPaths, resolveLocale, telHref, useTranslations } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return localeStaticPaths();
+}
+
+const locale = resolveLocale(Astro.params.lang);
+const t = useTranslations(locale);
+
+const contacts = {
+  director: { email: company.email, phone: company.phones.director },
+  marketing: { email: company.marketingEmail, phone: company.phones.marketing },
+} as const;
+const address = `${company.address.street}, ${company.address.postalCode} ${company.address.city}, ${t.common.country}`;
+---
+
+<BaseLayout locale={locale} title={t.contact.title} description={t.contact.description}>
+  <PageHeader eyebrow={t.contact.eyebrow} heading={t.contact.heading} lead={t.contact.lead} />
+
+  <section class="container-page py-20 lg:py-28">
+    <div class="grid gap-8 lg:grid-cols-2">
+      <div class="space-y-6">
+        <ul class="grid gap-5 sm:grid-cols-2">
+          {t.contact.people.map(({ key, role, name }) => {
+            const details = contacts[key as keyof typeof contacts];
+            return (
+              <li class="card">
+                <p class="text-sm font-semibold tracking-wide text-spark-700 uppercase">{role}</p>
+                <p class="mt-1 text-lg font-semibold text-slate-900">{name}</p>
+                <ul class="mt-4 space-y-2 text-sm">
+                  <li>
+                    <a
+                      href={`mailto:${details.email}`}
+                      class="inline-flex items-center gap-2 text-slate-600 hover:text-brand-700"
+                    >
+                      <Icon name="mail" class="size-4 text-brand-600" />
+                      <span class="sr-only">{t.common.email}:</span>
+                      {details.email}
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href={telHref(details.phone)}
+                      class="inline-flex items-center gap-2 text-slate-600 hover:text-brand-700"
+                    >
+                      <Icon name="phone" class="size-4 text-brand-600" />
+                      <span class="sr-only">{t.common.phone}:</span>
+                      {details.phone}
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div class="card">
+          <h2 class="text-lg font-semibold">{t.contact.companyTitle}</h2>
+          <dl class="mt-5 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-[auto_1fr]">
+            <dt class="font-medium text-slate-500">{t.common.address}</dt>
+            <dd class="text-slate-900">
+              <strong class="font-semibold">{company.legalName}</strong>
+              <br />
+              {address}
+            </dd>
+            <dt class="font-medium text-slate-500">{t.contact.labels.companyCode}</dt>
+            <dd class="text-slate-900 tabular-nums">{company.companyCode}</dd>
+            <dt class="font-medium text-slate-500">{t.contact.labels.vatCode}</dt>
+            <dd class="text-slate-900 tabular-nums">{company.vatCode}</dd>
+            <dt class="font-medium text-slate-500">{t.contact.labels.registry}</dt>
+            <dd class="text-slate-900">{t.contact.registry}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+        <iframe
+          src={`${company.maps.embed}&hl=${locale}`}
+          title={t.contact.mapTitle}
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          class="min-h-96 w-full flex-1 border-0"
+        ></iframe>
+        <a
+          href={company.maps.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center justify-between gap-3 bg-white px-6 py-4 text-sm font-semibold text-brand-700 hover:bg-brand-50"
+        >
+          <span class="flex items-center gap-2">
+            <Icon name="pin" class="size-4" />
+            {address}
+          </span>
+          <span class="flex items-center gap-1.5 whitespace-nowrap">
+            {t.contact.openMap}
+            <Icon name="external" class="size-4" />
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

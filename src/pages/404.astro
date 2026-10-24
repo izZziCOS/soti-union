@@ -1,0 +1,34 @@
+---
+import Icon from "~/components/Icon.astro";
+import { dictionaries, localizePath, locales, routes } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+
+// A single static 404 is served for every locale, so it speaks all three languages.
+const t = dictionaries.en;
+---
+
+<BaseLayout locale="en" title={t.notFound.title} description={t.notFound.text}>
+  <section class="container-page flex min-h-[60dvh] flex-col items-center justify-center py-24 text-center">
+    <p class="text-7xl font-black tracking-tight text-brand-100 sm:text-9xl" aria-hidden="true">
+      404
+    </p>
+    <h1 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{t.notFound.heading}</h1>
+    <p class="mt-4 max-w-md text-lg text-slate-600">{t.notFound.text}</p>
+    <ul class="mt-10 flex flex-wrap justify-center gap-3">
+      {locales.map((locale) => (
+        <li>
+          <a
+            href={localizePath(routes.home, locale)}
+            lang={locale}
+            class={
+              locale === "en" ? "btn-primary" : "btn border border-slate-300 hover:bg-slate-50"
+            }
+          >
+            {locale === "en" && <Icon name="arrow-left" class="size-4" />}
+            {dictionaries[locale].notFound.back}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

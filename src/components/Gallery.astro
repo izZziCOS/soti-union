@@ -1,0 +1,121 @@
+---
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
+import Icon from "~/components/Icon.astro";
+
+interface Props {
+  images: { src: ImageMetadata; alt: string }[];
+  labels: { open: string; close: string; previous: string; next: string };
+}
+
+const { images, labels } = Astro.props;
+---
+
+<div data-gallery>
+  <ul class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+    {images.map(({ src, alt }, index) => (
+      <li>
+        <button
+          type="button"
+          data-gallery-open={index}
+          aria-label={`${labels.open}: ${alt}`}
+          class="group relative block aspect-[4/3] w-full overflow-hidden rounded-2xl bg-slate-100"
+        >
+          <Image
+            src={src}
+            alt=""
+            widths={[320, 480, 640]}
+            sizes="(min-width: 1024px) 400px, 50vw"
+            class="size-full object-cover transition duration-500 group-hover:scale-105"
+          />
+          <span class="absolute inset-0 bg-gradient-to-t from-brand-950/60 to-transparent opacity-0 transition group-hover:opacity-100" />
+        </button>
+      </li>
+    ))}
+  </ul>
+
+  <dialog
+    data-gallery-dialog
+    aria-label={labels.open}
+    class="m-auto max-h-none max-w-none bg-transparent p-0 backdrop:bg-brand-950/90 backdrop:backdrop-blur-sm open:flex"
+  >
+    <div class="relative flex h-dvh w-screen items-center justify-center p-4 sm:p-10">
+      {images.map(({ src, alt }, index) => (
+        <figure
+          data-gallery-slide={index}
+          hidden
+          class="flex max-h-full flex-col items-center gap-3"
+        >
+          <Image
+            src={src}
+            alt={alt}
+            widths={[900, 1400]}
+            sizes="90vw"
+            loading="lazy"
+            class="max-h-[80dvh] w-auto rounded-xl object-contain shadow-2xl"
+          />
+          <figcaption class="text-center text-sm text-slate-200">{alt}</figcaption>
+        </figure>
+      ))}
+      <button
+        type="button"
+        data-gallery-close
+        class="absolute top-4 right-4 inline-flex size-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+      >
+        <span class="sr-only">{labels.close}</span>
+        <Icon name="close" class="size-6" />
+      </button>
+      <button
+        type="button"
+        data-gallery-prev
+        class="absolute left-2 inline-flex size-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-4"
+      >
+        <span class="sr-only">{labels.previous}</span>
+        <Icon name="chevron-left" class="size-6" />
+      </button>
+      <button
+        type="button"
+        data-gallery-next
+        class="absolute right-2 inline-flex size-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-4"
+      >
+        <span class="sr-only">{labels.next}</span>
+        <Icon name="chevron-right" class="size-6" />
+      </button>
+    </div>
+  </dialog>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>("[data-gallery]")) {
+    const dialog = root.querySelector<HTMLDialogElement>("[data-gallery-dialog]");
+    const slides = [...root.querySelectorAll<HTMLElement>("[data-gallery-slide]")];
+    if (!dialog || slides.length === 0) continue;
+
+    let current = 0;
+    const show = (index: number) => {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => (slide.hidden = i !== current));
+    };
+
+    root.querySelectorAll<HTMLButtonElement>("[data-gallery-open]").forEach((button) => {
+      button.addEventListener("click", () => {
+        show(Number(button.dataset.galleryOpen));
+        dialog.showModal();
+      });
+    });
+
+    root.querySelector("[data-gallery-close]")?.addEventListener("click", () => dialog.close());
+    root.querySelector("[data-gallery-prev]")?.addEventListener("click", () => show(current - 1));
+    root.querySelector("[data-gallery-next]")?.addEventListener("click", () => show(current + 1));
+
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") show(current - 1);
+      if (event.key === "ArrowRight") show(current + 1);
+    });
+    // Close when clicking the backdrop area around the image.
+    dialog.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement;
+      if (target === dialog || target === dialog.firstElementChild) dialog.close();
+    });
+  }
+</script>

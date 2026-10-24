@@ -1,0 +1,160 @@
+---
+import { Image } from "astro:assets";
+import Icon from "~/components/Icon.astro";
+import { localeLabels, localizePath, locales, routes, useTranslations, type Locale } from "~/i18n";
+import logo from "~/assets/logo.png";
+
+interface Props {
+  locale: Locale;
+  /** Current locale-independent path, e.g. `/about/`. */
+  path: string;
+}
+
+const { locale, path } = Astro.props;
+const t = useTranslations(locale);
+
+const links = [
+  { href: routes.about, label: t.nav.about },
+  { href: routes.references, label: t.nav.references },
+  { href: routes.career, label: t.nav.career },
+  { href: routes.contact, label: t.nav.contact },
+];
+
+const isActive = (href: string) => path === href || (href !== "/" && path.startsWith(href));
+---
+
+<header class="sticky top-0 z-40 border-b border-slate-200/70 bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
+  <div class="container-page flex h-16 items-center justify-between gap-6 lg:h-20">
+    <a
+      href={localizePath(routes.home, locale)}
+      class="shrink-0"
+      aria-label={`SOTI Union — ${t.nav.home}`}
+    >
+      <Image
+        src={logo}
+        alt=""
+        width={115}
+        height={56}
+        loading="eager"
+        class="h-10 w-auto lg:h-12"
+      />
+    </a>
+
+    <nav aria-label={t.nav.primary} class="hidden lg:block">
+      <ul class="flex items-center gap-1">
+        {links.map(({ href, label }) => (
+          <li>
+            <a
+              href={localizePath(href, locale)}
+              aria-current={isActive(href) ? "page" : undefined}
+              class="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 aria-[current=page]:bg-brand-50 aria-[current=page]:text-brand-700"
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-3">
+      <div
+        class="hidden items-center rounded-full border border-slate-200 p-1 text-xs font-semibold sm:flex"
+        role="group"
+        aria-label={t.nav.language}
+      >
+        {locales.map((l) => (
+          <a
+            href={localizePath(path, l)}
+            hreflang={l}
+            lang={l}
+            aria-current={l === locale ? "true" : undefined}
+            title={localeLabels[l].name}
+            class="rounded-full px-2.5 py-1 text-slate-500 transition hover:text-slate-900 aria-[current=true]:bg-brand-700 aria-[current=true]:text-white"
+          >
+            {localeLabels[l].short}
+          </a>
+        ))}
+      </div>
+      <a
+        href={localizePath(routes.contact, locale)}
+        class="btn-secondary hidden py-2.5! md:inline-flex"
+      >
+        {t.common.getInTouch}
+      </a>
+      <button
+        type="button"
+        class="inline-flex size-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 lg:hidden"
+        aria-controls="mobile-nav"
+        aria-expanded="false"
+        data-menu-toggle
+        data-label-open={t.nav.openMenu}
+        data-label-close={t.nav.closeMenu}
+      >
+        <span class="sr-only" data-menu-label>
+          {t.nav.openMenu}
+        </span>
+        <Icon name="menu" class="size-6" />
+      </button>
+    </div>
+  </div>
+
+  <div id="mobile-nav" hidden class="border-t border-slate-200 bg-white lg:hidden">
+    <nav aria-label={t.nav.primary} class="container-page py-4">
+      <ul class="flex flex-col gap-1">
+        {[{ href: routes.home, label: t.nav.home }, ...links].map(({ href, label }) => (
+          <li>
+            <a
+              href={localizePath(href, locale)}
+              aria-current={path === href ? "page" : undefined}
+              class="block rounded-xl px-4 py-3 text-base font-medium text-slate-700 hover:bg-slate-50 aria-[current=page]:bg-brand-50 aria-[current=page]:text-brand-700"
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <div
+        class="mt-4 flex gap-2 border-t border-slate-100 pt-4"
+        role="group"
+        aria-label={t.nav.language}
+      >
+        {locales.map((l) => (
+          <a
+            href={localizePath(path, l)}
+            hreflang={l}
+            lang={l}
+            aria-current={l === locale ? "true" : undefined}
+            class="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 aria-[current=true]:border-brand-700 aria-[current=true]:bg-brand-700 aria-[current=true]:text-white"
+          >
+            {localeLabels[l].name}
+          </a>
+        ))}
+      </div>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>("[data-menu-toggle]");
+  const panel = document.getElementById("mobile-nav");
+  const label = toggle?.querySelector("[data-menu-label]");
+
+  const setOpen = (open: boolean) => {
+    if (!toggle || !panel) return;
+    panel.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    if (label)
+      label.textContent = (open ? toggle.dataset.labelClose : toggle.dataset.labelOpen) ?? "";
+  };
+
+  toggle?.addEventListener("click", () => setOpen(panel?.hidden === true));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && panel && !panel.hidden) {
+      setOpen(false);
+      toggle?.focus();
+    }
+  });
+  window.matchMedia("(min-width: 1024px)").addEventListener("change", (event) => {
+    if (event.matches) setOpen(false);
+  });
+</script>

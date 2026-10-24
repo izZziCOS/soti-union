@@ -1,0 +1,71 @@
+---
+import { Image } from "astro:assets";
+import CtaBand from "~/components/CtaBand.astro";
+import PageHeader from "~/components/PageHeader.astro";
+import { localeStaticPaths, resolveLocale, useTranslations } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import superstructure from "~/assets/images/superstructure.jpg";
+import welding from "~/assets/images/welding.jpg";
+
+export function getStaticPaths() {
+  return localeStaticPaths();
+}
+
+const locale = resolveLocale(Astro.params.lang);
+const t = useTranslations(locale);
+---
+
+<BaseLayout
+  locale={locale}
+  title={t.about.title}
+  description={t.about.description}
+  ogImage={superstructure}
+>
+  <PageHeader eyebrow={t.about.eyebrow} heading={t.about.heading} lead={t.about.lead} />
+
+  <section class="container-page py-20 lg:py-28">
+    <div class="grid gap-14 lg:grid-cols-[1.3fr_1fr] lg:gap-20">
+      <div class="space-y-6 text-lg leading-relaxed text-slate-600">
+        {t.about.paragraphs.map((paragraph) => (
+          <p>{paragraph}</p>
+        ))}
+
+        <figure class="mt-12 rounded-2xl border-l-4 border-spark-500 bg-slate-50 p-8">
+          <p class="text-sm font-semibold tracking-wide text-spark-700 uppercase">
+            {t.about.focus.title}
+          </p>
+          <blockquote class="mt-3 text-xl leading-snug font-semibold text-slate-900 sm:text-2xl">
+            {t.about.focus.text}
+          </blockquote>
+        </figure>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 self-start">
+        <Image
+          src={superstructure}
+          alt={t.about.imageAlt}
+          widths={[353]}
+          sizes="(min-width: 1024px) 260px, 50vw"
+          class="aspect-[3/4] w-full rounded-2xl object-cover shadow-lg"
+        />
+        <Image
+          src={welding}
+          alt={t.about.secondImageAlt}
+          widths={[252]}
+          sizes="(min-width: 1024px) 260px, 50vw"
+          class="mt-12 aspect-[3/4] w-full rounded-2xl object-cover shadow-lg"
+        />
+        <dl class="col-span-2 mt-4 grid grid-cols-2 gap-4">
+          {t.home.stats.map(({ value, label }) => (
+            <div class="card flex flex-col-reverse gap-1 p-5!">
+              <dt class="text-sm text-slate-500">{label}</dt>
+              <dd class="text-2xl font-bold text-brand-700">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <CtaBand locale={locale} />
+</BaseLayout>

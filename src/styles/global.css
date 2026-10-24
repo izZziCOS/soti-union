@@ -1,0 +1,110 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* Navy taken from the SOTI Union logo */
+  --color-brand-50: #f3f3fb;
+  --color-brand-100: #e4e4f6;
+  --color-brand-200: #c9c8ec;
+  --color-brand-300: #a3a1dd;
+  --color-brand-400: #7774c8;
+  --color-brand-500: #5450b3;
+  --color-brand-600: #423e9c;
+  --color-brand-700: #2f2b7d;
+  --color-brand-800: #24215f;
+  --color-brand-900: #191744;
+  --color-brand-950: #0e0d29;
+
+  /* Welding-spark accent */
+  --color-spark-300: #fcd38d;
+  --color-spark-400: #fbb64a;
+  --color-spark-500: #f59e0b;
+  --color-spark-600: #d97706;
+  --color-spark-700: #b45309;
+
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-white font-sans text-slate-700 antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-balance text-slate-900;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-spark-500;
+  }
+
+  ::selection {
+    @apply bg-spark-300 text-brand-950;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-spark-700 uppercase;
+
+  &::before {
+    content: "";
+    @apply h-px w-6 bg-current;
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition duration-200;
+}
+
+@utility btn-primary {
+  @apply btn bg-spark-500 text-brand-950 shadow-lg shadow-spark-500/20 hover:bg-spark-400;
+}
+
+@utility btn-secondary {
+  @apply btn bg-brand-700 text-white hover:bg-brand-600;
+}
+
+@utility btn-ghost {
+  @apply btn text-white ring-1 ring-white/30 ring-inset hover:bg-white/10;
+}
+
+@utility card {
+  @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+}

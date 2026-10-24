@@ -1,0 +1,62 @@
+---
+import { Image } from "astro:assets";
+import Icon from "~/components/Icon.astro";
+import PageHeader from "~/components/PageHeader.astro";
+import { localeStaticPaths, localizePath, resolveLocale, routes, useTranslations } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import aidaprima from "~/assets/images/aidaprima.jpg";
+
+export function getStaticPaths() {
+  return localeStaticPaths();
+}
+
+const locale = resolveLocale(Astro.params.lang);
+const t = useTranslations(locale);
+---
+
+<BaseLayout
+  locale={locale}
+  title={t.aidaprima.title}
+  description={t.aidaprima.description}
+  ogImage={aidaprima}
+>
+  <PageHeader eyebrow={t.aidaprima.eyebrow} heading={t.aidaprima.heading}>
+    <a
+      href={localizePath(routes.references, locale)}
+      class="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-spark-400 hover:text-spark-300"
+    >
+      <Icon name="arrow-left" class="size-4" />
+      {t.aidaprima.back}
+    </a>
+  </PageHeader>
+
+  <article class="container-page py-20 lg:py-28">
+    <div class="grid gap-14 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
+      <div class="space-y-6 text-lg leading-relaxed text-slate-600">
+        {t.aidaprima.paragraphs.map((paragraph) => (
+          <p>{paragraph}</p>
+        ))}
+      </div>
+      <aside class="space-y-6">
+        <Image
+          src={aidaprima}
+          alt={t.aidaprima.imageAlt}
+          widths={[480, 900]}
+          sizes="(min-width: 1024px) 480px, 100vw"
+          class="aspect-[3/2] w-full rounded-2xl object-cover shadow-lg"
+        />
+        <div class="card">
+          <h2 class="text-lg font-semibold">{t.aidaprima.factsTitle}</h2>
+          <dl class="mt-4 grid grid-cols-2 gap-4">
+            {t.aidaprima.facts.map(({ label, value }) => (
+              <div class="flex flex-col-reverse">
+                <dt class="text-sm text-slate-500">{label}</dt>
+                <dd class="text-xl font-bold text-brand-700">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </aside>
+    </div>
+  </article>
+</BaseLayout>

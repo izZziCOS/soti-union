@@ -1,0 +1,89 @@
+---
+import { Image } from "astro:assets";
+import Icon from "~/components/Icon.astro";
+import PageHeader from "~/components/PageHeader.astro";
+import { company } from "~/data/company";
+import { localeStaticPaths, resolveLocale, telHref, useTranslations } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import welding from "~/assets/images/welding.jpg";
+
+export function getStaticPaths() {
+  return localeStaticPaths();
+}
+
+const locale = resolveLocale(Astro.params.lang);
+const t = useTranslations(locale);
+const applyHref = `mailto:${company.email}?subject=${encodeURIComponent(t.career.apply.emailSubject)}`;
+---
+
+<BaseLayout
+  locale={locale}
+  title={t.career.title}
+  description={t.career.description}
+  ogImage={welding}
+>
+  <PageHeader eyebrow={t.career.eyebrow} heading={t.career.heading} lead={t.career.lead} />
+
+  <section class="container-page py-20 lg:py-28">
+    <div class="grid gap-12 lg:grid-cols-[1.5fr_1fr] lg:gap-16">
+      <ul class="space-y-5">
+        {t.career.positions.map(({ title, requirements }) => (
+          <li class="card">
+            <h2 class="flex items-center gap-3 text-xl font-semibold">
+              <span class="inline-flex size-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                <Icon name="hardhat" class="size-5" />
+              </span>
+              {title}
+            </h2>
+            <ul class="mt-4 space-y-2">
+              {requirements.map((requirement) => (
+                <li class="flex gap-3 text-slate-600">
+                  <Icon name="check" class="mt-1 size-4 shrink-0 text-spark-700" />
+                  <span>{requirement}</span>
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+
+      <aside class="self-start overflow-hidden rounded-2xl bg-brand-950 text-white shadow-xl lg:sticky lg:top-28">
+        <Image
+          src={welding}
+          alt={t.career.imageAlt}
+          widths={[252]}
+          sizes="400px"
+          class="h-48 w-full object-cover"
+        />
+        <div class="p-8">
+          <h2 class="text-2xl font-bold text-white">{t.career.apply.title}</h2>
+          <p class="mt-3 text-slate-300">{t.career.apply.text}</p>
+          <ul class="mt-6 space-y-3 text-sm">
+            <li class="flex gap-3">
+              <Icon name="mail" class="size-4 shrink-0 text-spark-400" />
+              <a href={`mailto:${company.email}`} class="hover:text-spark-400">
+                {company.email}
+              </a>
+            </li>
+            <li class="flex gap-3">
+              <Icon name="phone" class="size-4 shrink-0 text-spark-400" />
+              <a href={telHref(company.phones.careers)} class="hover:text-spark-400">
+                {company.phones.careers}
+              </a>
+            </li>
+            <li class="flex gap-3">
+              <Icon name="pin" class="size-4 shrink-0 text-spark-400" />
+              <span>
+                {company.address.street}, {company.address.city}, {t.common.country}
+              </span>
+            </li>
+          </ul>
+          <a href={applyHref} class="btn-primary mt-8 w-full">
+            {t.career.apply.button}
+            <Icon name="arrow-right" class="size-4" />
+          </a>
+        </div>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
