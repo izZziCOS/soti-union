@@ -33,14 +33,26 @@ function ensureTrailingSlash(path: string): string {
   return path.endsWith("/") ? path : `${path}/`;
 }
 
+/**
+ * Deploy sub-path from Astro's `base` option, e.g. "/soti-union" on GitHub Pages, or "" at a domain
+ * root. `import.meta.env` is undefined outside Vite (Playwright imports this module directly).
+ */
+export const basePath = (import.meta.env?.BASE_URL ?? "/").replace(/\/+$/, "");
+
+/** Prefixes a root-relative path such as `/favicon.svg` with the deploy sub-path. */
+export function withBase(path: string, base = basePath): string {
+  return `${base}${path}`;
+}
+
 /** Prefixes a locale-independent path with the locale segment (none for the default locale). */
-export function localizePath(path: string, locale: Locale): string {
+export function localizePath(path: string, locale: Locale, base = basePath): string {
   const normalized = ensureTrailingSlash(path.startsWith("/") ? path : `/${path}`);
-  return locale === defaultLocale ? normalized : `/${locale}${normalized}`;
+  return withBase(locale === defaultLocale ? normalized : `/${locale}${normalized}`, base);
 }
 
 /** Splits a pathname into its locale and the locale-independent remainder. */
-export function parsePathname(pathname: string): { locale: Locale; path: string } {
+export function parsePathname(pathname: string, base = basePath): { locale: Locale; path: string } {
+  if (base && pathname.startsWith(base)) pathname = pathname.slice(base.length) || "/";
   const [, first, ...rest] = pathname.split("/");
   if (isLocale(first) && first !== defaultLocale) {
     return { locale: first, path: ensureTrailingSlash(`/${rest.join("/")}`) };

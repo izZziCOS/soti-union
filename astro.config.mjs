@@ -4,7 +4,9 @@ import sitemap from "@astrojs/sitemap";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  site: process.env.SITE_URL ?? "https://sotiunion.com",
+  site: process.env.SITE_URL || "https://sotiunion.com",
+  // Sub-path deployments such as GitHub Pages project sites (`/soti-union`).
+  base: process.env.BASE_PATH || "/",
   trailingSlash: "ignore",
   build: {
     format: "directory",

@@ -15,7 +15,7 @@ Live: <https://sotiunion.com> · Languages: English (`/`), Lithuanian (`/lt/`), 
 | Tests   | Vitest (unit) · Playwright + axe-core (e2e, WCAG 2.1 AA) on desktop and mobile            |
 | Quality | ESLint, Prettier, `astro check`                                                           |
 | Runtime | nginx (unprivileged, read-only container) with strict CSP and security headers            |
-| CI/CD   | GitHub Actions → GHCR image (amd64 + arm64) → optional SSH deploy                         |
+| CI/CD   | GitHub Actions → GHCR image (amd64 + arm64) → GitHub Pages and/or SSH deploy              |
 
 ## Getting started
 
@@ -110,6 +110,22 @@ cloud load balancer…), then configure the repository:
 | Variable | `DEPLOY_USER`    | SSH user (must be able to run `docker`) |
 | Variable | `DEPLOY_PATH`    | Directory containing `compose.yaml`     |
 | Secret   | `DEPLOY_SSH_KEY` | Private key for that user               |
+
+### GitHub Pages
+
+The `pages` job deploys the site to GitHub Pages on every push to `main`, once Pages is enabled:
+**Settings → Pages → Build and deployment → Source: GitHub Actions** (private repositories need a paid
+GitHub plan). Until then the job skips with a notice.
+
+The site is served at `https://izzzicos.github.io/soti-union/`; the build reads the URL and sub-path
+from the Pages settings, so links, assets, canonical URLs and the sitemap get the `/soti-union` prefix
+automatically. After adding a custom domain under **Settings → Pages → Custom domain** (and the DNS
+records GitHub lists), the next deployment builds for the domain root instead.
+
+Pages is static hosting only, so the nginx extras (security headers/CSP, redirects from the old
+site's `.html` URLs, `/healthz`) are not available there — use the Docker image if you need them.
+
+To build for a sub-path locally: `SITE_URL=https://example.com BASE_PATH=/soti-union npm run build`.
 
 If the GHCR package is private, run `docker login ghcr.io` on the server once. Create a
 `production` environment in the repository settings to add approval rules.

@@ -9,6 +9,7 @@ import {
   resolveLocale,
   routes,
   telHref,
+  withBase,
 } from "~/i18n/locales";
 
 describe("isLocale / resolveLocale", () => {
@@ -77,5 +78,31 @@ describe("telHref", () => {
   it("strips formatting from phone numbers", () => {
     expect(telHref("+370 688 78021")).toBe("tel:+37068878021");
     expect(telHref("(8) 640-52074")).toBe("tel:864052074");
+  });
+});
+
+describe("sub-path deployments", () => {
+  const base = "/soti-union";
+
+  it("prefixes links and assets with the base path", () => {
+    expect(localizePath("/", "en", base)).toBe("/soti-union/");
+    expect(localizePath("/career/", "lt", base)).toBe("/soti-union/lt/career/");
+    expect(withBase("/favicon.svg", base)).toBe("/soti-union/favicon.svg");
+  });
+
+  it("strips the base path when parsing", () => {
+    expect(parsePathname("/soti-union", base)).toEqual({ locale: "en", path: "/" });
+    expect(parsePathname("/soti-union/ru/about/", base)).toEqual({ locale: "ru", path: "/about/" });
+  });
+
+  it("round-trips every route in every locale", () => {
+    for (const locale of locales) {
+      for (const route of Object.values(routes)) {
+        expect(parsePathname(localizePath(route, locale, base), base)).toEqual({
+          locale,
+          path: route,
+        });
+      }
+    }
   });
 });

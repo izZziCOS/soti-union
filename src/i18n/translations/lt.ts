@@ -9,7 +9,7 @@ const lt: Dictionary = {
   nav: {
     home: "Pradžia",
     about: "Apie mus",
-    references: "Referencijos",
+    references: "Žinynas",
     career: "Karjera",
     contact: "Kontaktai",
     openMenu: "Atidaryti meniu",
@@ -20,7 +20,7 @@ const lt: Dictionary = {
   },
   common: {
     getInTouch: "Susisiekite",
-    viewReferences: "Peržiūrėti referencijas",
+    viewReferences: "Peržiūrėti žinyną",
     learnMore: "Sužinoti daugiau",
     readStory: "Skaityti daugiau",
     email: "El. paštas",
@@ -142,10 +142,10 @@ const lt: Dictionary = {
     secondImageAlt: "Suvirintojas darbo metu, apšviestas suvirinimo lanko",
   },
   references: {
-    title: "Referencijos",
+    title: "Žinynas",
     description:
       "„SOTI Union“ nuo 2008 m. įgyvendinti laivų statybos ir plieno konstrukcijų projektai Lietuvoje, Prancūzijoje, Nyderlanduose, Japonijoje ir JAV.",
-    eyebrow: "Referencijos",
+    eyebrow: "Žinynas",
     heading: "Projektai nuo 2008 m.",
     lead: "Laivų statyklos ir projektai, kuriuose dirbo mūsų komandos.",
     timelineTitle: "Projektų chronologija",
@@ -258,7 +258,7 @@ const lt: Dictionary = {
       { label: "Keleiviai", value: "iki 3 300" },
     ],
     imageAlt: "Kruizinio laivo „AIDAprima“ vizualizacija jūroje",
-    back: "Grįžti į referencijas",
+    back: "Grįžti į žinyną",
   },
   career: {
     title: "Karjera",
