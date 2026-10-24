@@ -14,7 +14,7 @@ ENV SITE_URL=${SITE_URL}
 RUN npm run build
 
 # ---- Serve with unprivileged nginx ----
-FROM nginxinc/nginx-unprivileged:1.30-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:1.31-alpine AS runtime
 
 LABEL org.opencontainers.image.title="soti-union" \
       org.opencontainers.image.description="UAB SOTI Union corporate website" \
