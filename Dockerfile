@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- Build the static site ----
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 ENV ASTRO_TELEMETRY_DISABLED=1
 
