@@ -1,13 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-// These checks cover the nginx configuration and only run against the Docker image
-// (or a deployment), i.e. when BASE_URL is set.
-test.skip(!process.env.BASE_URL, "requires BASE_URL pointing at the nginx container");
-
-test("health endpoint responds", async ({ request }) => {
-  const response = await request.get("/healthz");
-  expect(response.status()).toBe(200);
-});
+// These checks cover the Apache configuration (server/htaccess) and only run against
+// Apache (the CI job or the live site), i.e. when BASE_URL is set.
+test.skip(!process.env["BASE_URL"], "requires BASE_URL pointing at Apache");
 
 test("security headers are set", async ({ request }) => {
   const headers = (await request.get("/")).headers();
@@ -15,15 +10,29 @@ test("security headers are set", async ({ request }) => {
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
   expect(headers["x-frame-options"]).toBe("DENY");
-  expect(headers["server"]).not.toMatch(/\d/);
 });
 
-test("hashed assets are cached immutably", async ({ page, request }) => {
-  await page.goto("/");
+test("the CMS may be called for news", async ({ request }) => {
+  test.skip(!process.env["CMS_URL"], "requires a build with CMS_URL");
+  const csp = (await request.get("/")).headers()["content-security-policy"];
+  const origin = new URL(process.env["CMS_URL"]!).origin;
+  expect(csp).toContain(`connect-src 'self' ${origin}`);
+  expect(csp).toContain(`img-src 'self' data: ${origin}`);
+});
+
+test("hashed assets are cached immutably, pages are revalidated", async ({ page, request }) => {
+  const response = await page.goto("/");
+  expect(response?.headers()["cache-control"]).toBe("no-cache");
   const css = await page.locator('link[rel="stylesheet"]').first().getAttribute("href");
   expect(css).toMatch(/^\/_astro\//);
   const headers = (await request.get(css!)).headers();
   expect(headers["cache-control"]).toContain("immutable");
+});
+
+test("unknown pages get the 404 page", async ({ request }) => {
+  const response = await request.get("/no-such-page/");
+  expect(response.status()).toBe(404);
+  expect(await response.text()).toContain("<h1");
 });
 
 test.describe("legacy URLs from the old site redirect permanently", () => {
@@ -31,12 +40,13 @@ test.describe("legacy URLs from the old site redirect permanently", () => {
     ["/index.html", "/"],
     ["/about.html", "/about/"],
     ["/references.html", "/references/"],
-    ["/news.html", "/references/aidaprima/"],
+    ["/news.html", "/news/"],
     ["/career.html", "/career/"],
     ["/contact.html", "/contact/"],
     ["/lt/about.html", "/lt/about/"],
     ["/ru/contact.html", "/ru/contact/"],
     ["/lt/index.html", "/lt/"],
+    ["/lt/news.html", "/lt/news/"],
     ["/about", "/about/"],
   ] as const) {
     test(`${from} → ${to}`, async ({ request }) => {

@@ -1,26 +1,21 @@
-/** Locale-independent company facts. Translatable copy lives in `src/i18n/translations`. */
+import { applyCompany } from "~/cms/editable";
+import { remoteContent } from "~/cms/remote";
+import { defaultLocale } from "~/i18n/locales";
+import { companyDefaults } from "./company-defaults";
+
+const details = remoteContent
+  ? applyCompany(companyDefaults, remoteContent[defaultLocale])
+  : companyDefaults;
+
+const mapQuery = encodeURIComponent(
+  `${details.address.street}, ${details.address.postalCode} ${details.address.city}`,
+);
+
+/** Company facts, including the changes made in the CMS. */
 export const company = {
-  name: "SOTI Union",
-  legalName: "UAB „SOTI Union“",
-  founded: "2008-03-18",
-  address: {
-    street: "Šilutės pl. 101",
-    postalCode: "95112",
-    city: "Klaipėda",
-    countryCode: "LT",
-  },
-  companyCode: "301616539",
-  vatCode: "LT100004500713",
-  email: "info@sotiunion.com",
-  marketingEmail: "marketing@sotiunion.com",
-  phones: {
-    director: "+370 688 78021",
-    marketing: "+370 687 53334",
-    careers: "+370 640 52074",
-  },
+  ...details,
   maps: {
-    link: "https://www.google.com/maps/search/?api=1&query=%C5%A0ilut%C4%97s+pl.+101%2C+95112+Klaip%C4%97da",
-    embed:
-      "https://www.google.com/maps?q=%C5%A0ilut%C4%97s+pl.+101%2C+95112+Klaip%C4%97da&z=14&output=embed",
+    link: `https://www.google.com/maps/search/?api=1&query=${mapQuery}`,
+    embed: `https://www.google.com/maps?q=${mapQuery}&z=14&output=embed`,
   },
-} as const;
+};

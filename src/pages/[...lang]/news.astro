@@ -1,0 +1,21 @@
+---
+import NewsFeed from "~/components/NewsFeed.astro";
+import PageHeader from "~/components/PageHeader.astro";
+import { localeStaticPaths, resolveLocale, useTranslations } from "~/i18n";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+
+export function getStaticPaths() {
+  return localeStaticPaths();
+}
+
+const locale = resolveLocale(Astro.params.lang);
+const t = useTranslations(locale);
+---
+
+<BaseLayout locale={locale} title={t.news.title} description={t.news.description}>
+  <PageHeader eyebrow={t.news.eyebrow} heading={t.news.heading} lead={t.news.lead} />
+
+  <section class="container-page py-20 lg:py-28">
+    <NewsFeed locale={locale} mode="page" />
+  </section>
+</BaseLayout>

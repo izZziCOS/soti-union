@@ -1,0 +1,44 @@
+# Apache configuration for IONOS web hosting. The build writes it to dist/.htaccess,
+# replacing %CMS_ORIGIN% with the CMS address (news and their pictures come from there).
+
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+AddDefaultCharset utf-8
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Permanent redirects for URLs of the previous (2015) site. Matched on the original
+  # request line, so the internal DirectoryIndex lookup of /index.html is never caught.
+  RewriteCond %{THE_REQUEST} \s/((?:lt/|ru/)?)index\.html[\s?#]
+  RewriteRule ^ /%1 [R=301,L]
+  RewriteCond %{THE_REQUEST} \s/((?:lt/|ru/)?)news\.html[\s?#]
+  RewriteRule ^ /%1news/ [R=301,L]
+  RewriteCond %{THE_REQUEST} \s/((?:lt/|ru/)?)(about|references|career|contact)\.html[\s?#]
+  RewriteRule ^ /%1%2/ [R=301,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: %CMS_ORIGIN%; font-src 'self'; connect-src 'self' %CMS_ORIGIN%; frame-src https://www.google.com https://maps.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+
+  # Content-hashed build output never changes; pages are always revalidated.
+  <If "%{REQUEST_URI} =~ m#^/_astro/#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  <ElseIf "%{REQUEST_URI} =~ m#\.(svg|png|ico|txt|xml)$#">
+    Header set Cache-Control "public, max-age=86400"
+  </ElseIf>
+  <Else>
+    Header set Cache-Control "no-cache"
+  </Else>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/javascript application/json application/xml image/svg+xml
+</IfModule>

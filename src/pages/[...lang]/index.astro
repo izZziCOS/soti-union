@@ -3,10 +3,11 @@ import type { ImageMetadata } from "astro";
 import { Image } from "astro:assets";
 import CtaBand from "~/components/CtaBand.astro";
 import Icon, { type IconName } from "~/components/Icon.astro";
+import NewsFeed from "~/components/NewsFeed.astro";
 import { company } from "~/data/company";
 import { localizePath, localeStaticPaths, resolveLocale, routes, useTranslations } from "~/i18n";
 import BaseLayout from "~/layouts/BaseLayout.astro";
-import hero from "~/assets/images/hero-workshop.jpg";
+import hero from "~/assets/images/hero-welding.jpg";
 import hullBlock from "~/assets/images/hull-block.jpg";
 import oilGas from "~/assets/images/markets/oil-gas.jpg";
 import shipbuilding from "~/assets/images/markets/shipbuilding.jpg";
@@ -59,7 +60,7 @@ const jsonLd = {
       sizes="100vw"
       loading="eager"
       fetchpriority="high"
-      class="absolute inset-0 -z-10 size-full -scale-x-100 object-cover object-left"
+      class="absolute inset-0 -z-10 size-full -scale-x-100 object-cover object-[30%_center]"
     />
     <div class="absolute inset-0 -z-10 bg-gradient-to-r from-brand-950 via-brand-950/85 to-brand-950/20"></div>
     <div class="container-page flex min-h-[78dvh] flex-col justify-center py-24 lg:py-32">
@@ -204,6 +205,33 @@ const jsonLd = {
           </a>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- Latest news: shown by the news script once posts have loaded -->
+  <section
+    class="container-page py-20 lg:py-28"
+    aria-labelledby="news-title"
+    data-news-section
+    hidden
+  >
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="eyebrow">{t.news.latestEyebrow}</p>
+        <h2 id="news-title" class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          {t.news.latestTitle}
+        </h2>
+      </div>
+      <a
+        href={localizePath(routes.news, locale)}
+        class="inline-flex items-center gap-1.5 font-semibold text-brand-700 hover:text-brand-600"
+      >
+        {t.news.viewAll}
+        <Icon name="arrow-right" class="size-4" />
+      </a>
+    </div>
+    <div class="mt-12">
+      <NewsFeed locale={locale} mode="latest" />
     </div>
   </section>
 

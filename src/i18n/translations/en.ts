@@ -8,6 +8,7 @@ const en = {
     home: "Home",
     about: "About",
     references: "References",
+    news: "News",
     career: "Career",
     contact: "Contact",
     openMenu: "Open menu",
@@ -32,7 +33,7 @@ const en = {
       eyebrow: "Klaipėda, Lithuania · Since 2008",
       title: "Steelwork and outfitting for the shipbuilding industry",
       lead: "SOTI Union provides steelwork and outfitting services for shipbuilding, wind-offshore, oil & gas and steel construction markets — on your site or in our own workshop.",
-      imageAlt: "Worker operating a press brake in a steel fabrication workshop",
+      imageAlt: "Welder joining steel plates of a hull, with sparks flying",
     },
     stats: [
       { value: "2008", label: "Founded in Klaipėda" },
@@ -269,6 +270,8 @@ const en = {
     eyebrow: "Career",
     heading: "Join our crews",
     lead: "SOTI Union UAB is looking for the following candidates:",
+    noPositions:
+      "There are no open positions at the moment. You are welcome to send your CV anyway.",
     positions: [
       {
         title: "Supervisors / foremen",
@@ -314,6 +317,26 @@ const en = {
     ],
     mapTitle: "Map showing the SOTI Union office at Šilutės pl. 101, Klaipėda",
     openMap: "Open in Google Maps",
+  },
+  news: {
+    title: "News",
+    description: "News and updates from SOTI Union — projects, people and company milestones.",
+    eyebrow: "News",
+    heading: "News and updates",
+    lead: "Projects, people and milestones of SOTI Union.",
+    loading: "Loading news…",
+    empty: "There is no news yet.",
+    error: "The news could not be loaded. Please try again later.",
+    notFound: "This news item could not be found.",
+    readMore: "Read more",
+    showMore: "Show more",
+    back: "All news",
+    pictures: "Pictures",
+    documents: "Documents",
+    openPicture: "Open picture",
+    latestEyebrow: "News",
+    latestTitle: "Latest news",
+    viewAll: "All news",
   },
   footer: {
     about:

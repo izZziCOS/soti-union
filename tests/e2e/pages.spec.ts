@@ -55,6 +55,7 @@ test("navigation reaches every section", async ({ page, isMobile }) => {
   for (const [label, route] of [
     [t.nav.about, routes.about],
     [t.nav.references, routes.references],
+    [t.nav.news, routes.news],
     [t.nav.career, routes.career],
     [t.nav.contact, routes.contact],
   ] as const) {

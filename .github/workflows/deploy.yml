@@ -1,0 +1,73 @@
+# Publishes the site to IONOS web hosting:
+#   1. runs the CI checks,
+#   2. sends the editable texts to the CMS (new texts appear in the panel),
+#   3. builds the site with the texts as changed in the CMS,
+#   4. uploads it over SFTP.
+# Started from Actions → Deploy → Run workflow, or by "Publish website" in the CMS panel.
+#
+# Repository settings (environment "production"):
+#   variables  SITE_URL (https://sotiunion.com), CMS_URL (https://admin.suerteksa.com),
+#              SFTP_HOST, SFTP_USER, SFTP_PATH (the folder the domain points to)
+#   secrets    SFTP_PASSWORD, CONTENT_SYNC_TOKEN (same value as in the CMS .env)
+name: Deploy
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Build with CMS content and upload to IONOS
+    needs: checks
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+      SITE_URL: ${{ vars.SITE_URL }}
+      CMS_URL: ${{ vars.CMS_URL }}
+      CMS_SITE: soti
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      - name: Send the editable texts to the CMS
+        run: npm run content:sync
+        env:
+          CONTENT_SYNC_TOKEN: ${{ secrets.CONTENT_SYNC_TOKEN }}
+
+      - name: Build with the CMS texts
+        run: npm run build
+
+      - name: Install lftp
+        run: sudo apt-get update -q && sudo apt-get install -y -q lftp
+
+      - name: Upload
+        env:
+          SFTP_HOST: ${{ vars.SFTP_HOST }}
+          SFTP_USER: ${{ vars.SFTP_USER }}
+          SFTP_PATH: ${{ vars.SFTP_PATH }}
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+        run: |
+          lftp -u "$SFTP_USER","$SFTP_PASSWORD" "sftp://$SFTP_HOST" <<EOF
+          set sftp:auto-confirm yes
+          set net:max-retries 3
+          set mirror:set-permissions off
+          mkdir -p -f $SFTP_PATH
+          mirror --reverse --delete --parallel=10 --verbose=1 dist $SFTP_PATH
+          bye
+          EOF

@@ -3,12 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["v*.*.*"]
   pull_request:
-  workflow_dispatch:
+  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -16,7 +15,9 @@ permissions:
 
 env:
   ASTRO_TELEMETRY_DISABLED: 1
-  IMAGE: ghcr.io/${{ github.repository }}
+  # Tests build with the repository texts and a mocked CMS for the news.
+  CMS_URL: https://cms.test
+  CMS_FETCH_CONTENT: "false"
 
 jobs:
   verify:
@@ -33,11 +34,13 @@ jobs:
       - run: npm run format:check
       - run: npm run check
       - run: npm run test:coverage
+      - run: npm run content:sync -- --dry-run > /dev/null
       - run: npm run build
       - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
+          include-hidden-files: true # .htaccess
           retention-days: 7
 
   e2e:
@@ -64,28 +67,23 @@ jobs:
           path: playwright-report
           retention-days: 7
 
-  docker:
-    name: Docker image (build + e2e against nginx)
+  apache:
+    name: E2E tests (Apache with .htaccess, as on IONOS)
     needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - name: Build image
-        uses: docker/build-push-action@v7
+      - uses: actions/download-artifact@v8
         with:
-          context: .
-          load: true
-          tags: soti-union:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Start container
+          name: dist
+          path: dist
+      - name: Start Apache
         run: |
-          docker run -d --name web -p 8080:8080 --read-only --tmpfs /tmp soti-union:ci
-          for i in $(seq 1 30); do
-            [ "$(docker inspect -f '{{.State.Health.Status}}' web)" = "healthy" ] && exit 0
-            sleep 1
-          done
+          docker run -d --name web -p 8080:80 -v "$PWD/dist:/usr/local/apache2/htdocs:ro" httpd:2.4 \
+            sh -c "sed -i -e 's/^#\(LoadModule rewrite_module\)/\1/' -e 's/^#\(LoadModule deflate_module\)/\1/' \
+                          -e 's/^#\(LoadModule headers_module\)/\1/' -e 's/AllowOverride None/AllowOverride All/g' \
+                          conf/httpd.conf && httpd-foreground"
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:8080/ && exit 0; sleep 1; done
           docker logs web
           exit 1
       - uses: actions/setup-node@v7
@@ -94,132 +92,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: E2E tests against the container
+      - name: E2E tests against Apache
         run: npm run test:e2e
         env:
           BASE_URL: http://localhost:8080
-      - name: Container logs
+      - name: Apache logs
         if: failure()
         run: docker logs web
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report-docker
+          name: playwright-report-apache
           path: playwright-report
           retention-days: 7
-
-  publish:
-    name: Publish image to GHCR
-    needs: [e2e, docker]
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    outputs:
-      digest: ${{ steps.push.outputs.digest }}
-    steps:
-      - uses: actions/checkout@v7
-      # GHCR image names must be lowercase (the repository owner is not).
-      - run: echo "IMAGE=${IMAGE,,}" >> "$GITHUB_ENV"
-      - uses: docker/setup-qemu-action@v4
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.IMAGE }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-      - id: push
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    name: Deploy to server
-    needs: publish
-    # Opt-in: set the DEPLOY_HOST repository variable (and secrets below) to enable.
-    if: github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://sotiunion.com
-    steps:
-      - name: Pull and restart via SSH
-        env:
-          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd '$DEPLOY_PATH' && docker compose pull && docker compose up -d --remove-orphans && docker image prune -f"
-
-  pages:
-    name: Deploy to GitHub Pages
-    needs: [e2e, docker]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      # Skip quietly until Pages is enabled (Settings → Pages → Source: GitHub Actions).
-      - id: enabled
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh api "repos/${{ github.repository }}/pages" --silent 2>/dev/null; then
-            echo "value=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::notice::GitHub Pages is not enabled for this repository; skipping deployment."
-            echo "value=false" >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.enabled.outputs.value == 'true'
-        uses: actions/checkout@v7
-      - if: steps.enabled.outputs.value == 'true'
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - if: steps.enabled.outputs.value == 'true'
-        run: npm ci
-      - id: pages
-        if: steps.enabled.outputs.value == 'true'
-        uses: actions/configure-pages@v6
-      # origin/base_path follow the Pages settings: izzzicos.github.io + /soti-union,
-      # or the custom domain + "" once one is configured.
-      - if: steps.enabled.outputs.value == 'true'
-        run: npm run build
-        env:
-          SITE_URL: ${{ steps.pages.outputs.origin }}
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
-      - if: steps.enabled.outputs.value == 'true'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
-      - id: deployment
-        if: steps.enabled.outputs.value == 'true'
-        uses: actions/deploy-pages@v5

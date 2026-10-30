@@ -10,6 +10,7 @@ const lt: Dictionary = {
     home: "Pradžia",
     about: "Apie mus",
     references: "Žinynas",
+    news: "Naujienos",
     career: "Karjera",
     contact: "Kontaktai",
     openMenu: "Atidaryti meniu",
@@ -34,7 +35,7 @@ const lt: Dictionary = {
       eyebrow: "Klaipėda, Lietuva · Nuo 2008 m.",
       title: "Plieno ir įrengimo darbai laivų statybos pramonei",
       lead: "„SOTI Union“ teikia plieno ir įrengimo darbų paslaugas laivų statybos, jūrinės vėjo energetikos, naftos ir dujų bei plieno konstrukcijų rinkoms – užsakovo teritorijoje arba mūsų ceche.",
-      imageAlt: "Darbuotojas dirba su lankstymo presu metalo apdirbimo ceche",
+      imageAlt: "Suvirintojas virina korpuso plieno lakštus, lekia kibirkštys",
     },
     stats: [
       { value: "2008", label: "Įkurta Klaipėdoje" },
@@ -267,6 +268,7 @@ const lt: Dictionary = {
     eyebrow: "Karjera",
     heading: "Prisijunkite prie mūsų komandos",
     lead: "UAB „SOTI Union“ ieško šių kandidatų:",
+    noPositions: "Šiuo metu laisvų darbo vietų nėra. Vis tiek kviečiame atsiųsti savo CV.",
     positions: [
       {
         title: "Meistrų / brigadininkų",
@@ -312,6 +314,26 @@ const lt: Dictionary = {
     ],
     mapTitle: "Žemėlapis su „SOTI Union“ biuru adresu Šilutės pl. 101, Klaipėda",
     openMap: "Atidaryti „Google Maps“",
+  },
+  news: {
+    title: "Naujienos",
+    description: "„SOTI Union“ naujienos – projektai, žmonės ir svarbiausi įmonės įvykiai.",
+    eyebrow: "Naujienos",
+    heading: "Naujienos",
+    lead: "„SOTI Union“ projektai, žmonės ir svarbiausi įvykiai.",
+    loading: "Įkeliamos naujienos…",
+    empty: "Naujienų dar nėra.",
+    error: "Nepavyko įkelti naujienų. Bandykite vėliau.",
+    notFound: "Šios naujienos rasti nepavyko.",
+    readMore: "Skaityti daugiau",
+    showMore: "Rodyti daugiau",
+    back: "Visos naujienos",
+    pictures: "Nuotraukos",
+    documents: "Dokumentai",
+    openPicture: "Atidaryti nuotrauką",
+    latestEyebrow: "Naujienos",
+    latestTitle: "Naujausios naujienos",
+    viewAll: "Visos naujienos",
   },
   footer: {
     about:

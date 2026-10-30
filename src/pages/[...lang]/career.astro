@@ -26,7 +26,10 @@ const applyHref = `mailto:${company.email}?subject=${encodeURIComponent(t.career
 
   <section class="container-page py-20 lg:py-28">
     <div class="grid gap-12 lg:grid-cols-[1.5fr_1fr] lg:gap-16">
-      <ul class="space-y-5">
+      {t.career.positions.length === 0 && (
+        <p class="card self-start text-lg text-slate-600">{t.career.noPositions}</p>
+      )}
+      <ul class="space-y-5" hidden={t.career.positions.length === 0}>
         {t.career.positions.map(({ title, requirements }) => (
           <li class="card">
             <h2 class="flex items-center gap-3 text-xl font-semibold">
@@ -35,7 +38,7 @@ const applyHref = `mailto:${company.email}?subject=${encodeURIComponent(t.career
               </span>
               {title}
             </h2>
-            <ul class="mt-4 space-y-2">
+            <ul class="mt-4 space-y-2" hidden={requirements.length === 0}>
               {requirements.map((requirement) => (
                 <li class="flex gap-3 text-slate-600">
                   <Icon name="check" class="mt-1 size-4 shrink-0 text-spark-700" />

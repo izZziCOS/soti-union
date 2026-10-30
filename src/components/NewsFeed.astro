@@ -1,0 +1,157 @@
+---
+import Icon from "~/components/Icon.astro";
+import { cms } from "~/cms/env";
+import { localizePath, routes, useTranslations, type Locale } from "~/i18n";
+
+interface Props {
+  locale: Locale;
+  /** `page`: the news page (list, or one post with ?post=slug). `latest`: the three newest. */
+  mode: "page" | "latest";
+}
+
+const { locale, mode } = Astro.props;
+const t = useTranslations(locale);
+const Heading = mode === "page" ? "h2" : "h3";
+
+// Texts the script needs; the news itself is loaded from the CMS in the browser.
+const labels = {
+  loading: t.news.loading,
+  empty: t.news.empty,
+  error: t.news.error,
+  notFound: t.news.notFound,
+};
+---
+
+<div
+  data-news={mode}
+  data-api={cms.url ? `${cms.url}/api/v1/${cms.site}` : ""}
+  data-locale={locale}
+  data-page-url={localizePath(routes.news, locale)}
+  data-labels={JSON.stringify(labels)}
+>
+  <p data-news-status role="status" class="text-slate-500">
+    {mode === "page" ? t.news.loading : ""}
+  </p>
+
+  <ul data-news-list class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"></ul>
+
+  {mode === "page" && (
+    <div class="mt-12 flex justify-center">
+      <button type="button" data-news-more hidden class="btn-secondary">
+        {t.news.showMore}
+      </button>
+    </div>
+  )}
+
+  {mode === "page" && <div data-news-post hidden></div>}
+
+  <template data-news-card>
+    <li>
+      <a
+        data-field="link"
+        class="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+      >
+        <div class="aspect-[16/9] overflow-hidden bg-brand-50">
+          <img
+            data-field="cover"
+            alt=""
+            loading="lazy"
+            class="size-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        </div>
+        <div class="flex flex-1 flex-col p-6">
+          <time data-field="date" class="text-sm text-slate-500"></time>
+          <Heading data-field="title" class="mt-2 text-lg font-semibold text-slate-900" />
+          <p data-field="excerpt" class="mt-2 line-clamp-3 leading-relaxed text-slate-600"></p>
+          <span class="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-semibold text-brand-700">
+            {t.news.readMore}
+            <Icon name="arrow-right" class="size-4 transition group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </a>
+    </li>
+  </template>
+
+  {mode === "page" && (
+    <template data-news-article>
+      <article class="mx-auto max-w-3xl">
+        <a
+          data-field="back"
+          class="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-600"
+        >
+          <Icon name="chevron-left" class="size-4" />
+          {t.news.back}
+        </a>
+        <time data-field="date" class="mt-8 block text-sm text-slate-500" />
+        <h2
+          data-field="title"
+          class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl"
+        />
+        <img
+          data-field="cover"
+          alt=""
+          class="mt-8 aspect-[16/9] w-full rounded-2xl object-cover shadow-sm"
+        />
+        <div data-field="body" class="prose-news mt-8" />
+
+        <section data-field="pictures" class="mt-12">
+          <h3 class="text-xl font-semibold">{t.news.pictures}</h3>
+          <ul data-field="picture-list" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3" />
+        </section>
+
+        <section data-field="documents" class="mt-12">
+          <h3 class="text-xl font-semibold">{t.news.documents}</h3>
+          <ul data-field="document-list" class="mt-5 space-y-3" />
+        </section>
+      </article>
+    </template>
+  )}
+
+  {mode === "page" && (
+    <template data-news-picture>
+      <li>
+        <a
+          data-field="link"
+          target="_blank"
+          rel="noopener"
+          class="group block aspect-[4/3] overflow-hidden rounded-xl bg-slate-100"
+        >
+          <img
+            data-field="image"
+            loading="lazy"
+            class="size-full object-cover transition duration-500 group-hover:scale-105"
+          />
+        </a>
+        <p data-field="caption" class="mt-1.5 text-sm text-slate-500" />
+      </li>
+    </template>
+  )}
+
+  {mode === "page" && (
+    <template data-news-document>
+      <li>
+        <a
+          data-field="link"
+          target="_blank"
+          rel="noopener"
+          class="card flex items-center gap-4 p-4! transition hover:border-brand-200 hover:shadow-md"
+        >
+          <span class="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+            <Icon name="document" class="size-5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span data-field="name" class="block truncate font-semibold text-slate-900" />
+            <span data-field="size" class="block text-sm text-slate-500" />
+          </span>
+          <Icon name="external" class="size-4 shrink-0 text-slate-400" />
+        </a>
+      </li>
+    </template>
+  )}
+</div>
+
+<script>
+  import { initNews } from "~/scripts/news";
+
+  document.querySelectorAll<HTMLElement>("[data-news]").forEach(initNews);
+</script>

@@ -1,21 +1,24 @@
 # SOTI Union
 
-Corporate website of **UAB „SOTI Union“** — steelwork and outfitting services for shipbuilding,
-wind-offshore, oil & gas and steel construction, Klaipėda, Lithuania.
+Corporate website of **UAB „SOTI Union“**, Klaipėda, Lithuania. The company provides steelwork
+and outfitting services for shipbuilding, wind-offshore, oil & gas and steel construction.
 
-Live: <https://sotiunion.com> · Languages: English (`/`), Lithuanian (`/lt/`), Russian (`/ru/`)
+Live: <https://sotiunion.com>. Languages: English (`/`), Lithuanian (`/lt/`), Russian (`/ru/`).
+
+News and page texts are managed in the **Suerteksa CMS** (repository `suerteksa-backend`).
 
 ## Stack
 
-| Concern | Choice                                                                                    |
-| ------- | ----------------------------------------------------------------------------------------- |
-| Site    | [Astro](https://astro.build) 7 + TypeScript (strictest), static output, zero JS framework |
-| Styling | Tailwind CSS 4, self-hosted Inter (Latin + Cyrillic)                                      |
-| Images  | `astro:assets` — responsive WebP generated at build time                                  |
-| Tests   | Vitest (unit) · Playwright + axe-core (e2e, WCAG 2.1 AA) on desktop and mobile            |
-| Quality | ESLint, Prettier, `astro check`                                                           |
-| Runtime | nginx (unprivileged, read-only container) with strict CSP and security headers            |
-| CI/CD   | GitHub Actions → GHCR image (amd64 + arm64) → GitHub Pages and/or SSH deploy              |
+| Concern | Choice                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------ |
+| Site    | [Astro](https://astro.build) 7 + TypeScript (strictest), static output, no JS framework    |
+| Content | Suerteksa CMS: texts are applied at build time, news is loaded in the browser              |
+| Styling | Tailwind CSS 4, self-hosted Inter (Latin + Cyrillic)                                       |
+| Images  | `astro:assets`, responsive WebP generated at build time                                    |
+| Tests   | Vitest (unit), Playwright + axe-core (e2e, WCAG 2.1 AA) on desktop and mobile              |
+| Quality | ESLint, Prettier, `astro check`                                                            |
+| Hosting | IONOS web hosting (Apache): strict CSP, security headers and redirects in `.htaccess`      |
+| CI/CD   | GitHub Actions: checks and e2e on Apache, deploy over SFTP on demand or from the CMS panel |
 
 ## Getting started
 
@@ -26,24 +29,32 @@ npm ci
 npm run dev          # http://localhost:4321
 ```
 
-| Script                  | What it does                                             |
-| ----------------------- | -------------------------------------------------------- |
-| `npm run build`         | Production build into `dist/`                            |
-| `npm run preview`       | Serve `dist/` locally                                    |
-| `npm test`              | Unit tests                                               |
-| `npm run test:coverage` | Unit tests with coverage                                 |
-| `npm run test:e2e`      | Playwright e2e + accessibility tests (run `build` first) |
-| `npm run lint`          | ESLint                                                   |
-| `npm run check`         | Astro/TypeScript type-check                              |
-| `npm run format`        | Prettier                                                 |
-| `npm run validate`      | Lint, format check, type-check, unit tests, build        |
+Without a CMS the site uses the texts in the repository and the news pages show a notice.
+To work with a local CMS, copy `.env.example` to `.env`. The default `CMS_URL` there is
+`http://localhost:8095`.
+
+| Script                  | What it does                                                     |
+| ----------------------- | ---------------------------------------------------------------- |
+| `npm run build`         | Production build into `dist/`, including `dist/.htaccess`        |
+| `npm run preview`       | Serve `dist/` locally                                            |
+| `npm test`              | Unit tests                                                       |
+| `npm run test:coverage` | Unit tests with coverage                                         |
+| `npm run test:e2e`      | Playwright e2e + accessibility tests (run `build` first)         |
+| `npm run content:sync`  | Send the editable texts to the CMS (`-- --dry-run` to list them) |
+| `npm run lint`          | ESLint                                                           |
+| `npm run check`         | Astro/TypeScript type-check                                      |
+| `npm run format`        | Prettier                                                         |
+| `npm run validate`      | Lint, format check, type-check, unit tests, build                |
 
 First-time e2e setup: `npx playwright install chromium`.
-To run the e2e suite against any running server (e.g. the Docker container or production), set
-`BASE_URL` — this also enables the nginx checks in `tests/e2e/server.spec.ts`:
+
+The news tests mock the CMS. They need a build and a test run with the same `CMS_URL`.
+`BASE_URL` runs the suite against any running server; it also enables the Apache checks in
+`tests/e2e/server.spec.ts`.
 
 ```sh
-BASE_URL=http://localhost:8080 npm run test:e2e
+CMS_URL=https://cms.test CMS_FETCH_CONTENT=false npm run build
+CMS_URL=https://cms.test CMS_FETCH_CONTENT=false npm run test:e2e
 ```
 
 ## Project layout
@@ -53,87 +64,96 @@ src/
   i18n/
     locales.ts            locales, routes, path helpers
     translations/         en.ts (source of truth, defines the Dictionary type), lt.ts, ru.ts
-  data/company.ts         company details shared by all languages (address, codes, phones)
+  cms/
+    editable.ts           which texts the CMS may change, and how its values are applied
+    remote.ts             loads the CMS texts at build time
+  data/company-defaults.ts  company details (address, codes, phones); company.ts adds CMS changes
   pages/[...lang]/        every page, generated once per locale
   components/  layouts/  styles/
+  scripts/news.ts         loads news from the CMS in the browser
   assets/images/          source photos (optimized at build time)
-nginx/                    production server config
+scripts/sync-content.ts   sends the editable texts to the CMS (runs on deploy)
+server/htaccess           Apache configuration, written to dist/.htaccess by the build
 tests/unit/  tests/e2e/
 ```
 
-### Editing content
+## Content
 
-- **Text** lives in `src/i18n/translations/*.ts`. `lt.ts` and `ru.ts` are typed against `en.ts`, so a
-  missing or extra key fails the type-check, and unit tests verify every locale has the same structure
-  and no empty strings.
-- **Contacts / company codes** live in `src/data/company.ts`.
+### In the CMS panel
+
+- **News** (Suerteksa CMS → SOTI Union → News) appears on the site as soon as it is saved.
+  It shows on the News page and in the "Latest news" section of the home page, which stays
+  hidden while there is no news. The browser loads it from the CMS
+  (`/api/v1/soti/news`).
+- **Page content** (CMS → Page content) holds every text of the site.
+  - Company details (phones, emails, address, codes) are entered once for all languages.
+  - **Open positions** (`career.positions`) are a list: positions can be added, removed and
+    reordered, with requirements one per line.
+  - Changes appear after **Publish website**, which runs the deploy workflow.
+- The texts in this repository stay the defaults. A panel change wins; **Reset** in the panel
+  brings the repository text back.
+
+### In the repository
+
+- **Text** lives in `src/i18n/translations/*.ts`.
+  - `lt.ts` and `ru.ts` are typed against `en.ts`, so a missing or extra key fails the
+    type-check.
+  - Unit tests check that every locale has the same structure and no empty strings.
+  - New keys show up in the CMS with the next deploy. Removed keys disappear from it, unless
+    they were changed in the panel.
+- **Lists that should be editable as a whole** (items added or removed in the panel) go into
+  `editableLists` in `src/cms/editable.ts`.
+- **Contacts / company codes** live in `src/data/company-defaults.ts`. Fields listed in
+  `editableCompanyFields` can be changed in the CMS.
 - **Adding a reference project**: add an item at the top of `references.items` in all three
-  translation files (keep newest first — a test enforces it).
-- **Adding a page**: create `src/pages/[...lang]/<name>.astro` (copy an existing page), add the path to
-  `routes` in `src/i18n/locales.ts` and a nav label in the translations.
+  translation files. Keep them newest first; a test enforces it.
+- **Adding a page**:
+  1. Create `src/pages/[...lang]/<name>.astro` by copying an existing page.
+  2. Add the path to `routes` in `src/i18n/locales.ts`.
+  3. Add a nav label in the translations.
 
-## Docker
-
-```sh
-docker compose up --build    # http://localhost:8080
-```
-
-The image is a multi-stage build: Node builds the static site, then `nginxinc/nginx-unprivileged`
-serves it on port **8080** as a non-root user. It ships with:
-
-- strict Content-Security-Policy (no inline scripts or styles) and standard security headers
-- immutable caching for hashed assets, `no-cache` for HTML, gzip
-- `GET /healthz` for health checks (used by the Docker `HEALTHCHECK`)
-- 301 redirects from the old site's URLs (`/about.html`, `/lt/contact.html`, `/news.html`, …)
-
-Build for a different domain with `--build-arg SITE_URL=https://example.com` (used for canonical
-URLs, hreflang and the sitemap).
-
-## CI/CD
+## Deploying to IONOS
 
 `.github/workflows/ci.yml` runs on every push and pull request:
 
-1. **verify** — lint, format check, type-check, unit tests with coverage, build
-2. **e2e** — Playwright against `astro preview`
-3. **docker** — builds the image, starts it read-only and runs the full e2e suite (including
-   redirects and headers) against nginx
-4. **publish** (pushes to `main` and `v*.*.*` tags) — multi-arch image to
-   `ghcr.io/izzzicos/soti-union` tagged `latest`, `sha-…` and semver
-5. **deploy** (optional, `main` only) — SSH to a server and `docker compose pull && up -d`
+1. **verify**: lint, format check, type-check, unit tests with coverage, build
+2. **e2e**: Playwright against `astro preview`
+3. **apache**: the full e2e suite against Apache (`httpd`) serving `dist/` with its `.htaccess`.
+   This covers the CSP, redirects from the old site's URLs, caching headers and the 404 page.
 
-To enable deployment, copy `compose.yaml` to the server, put TLS in front of it (Caddy, Traefik, a
-cloud load balancer…), then configure the repository:
+`.github/workflows/deploy.yml` publishes the site. Start it from **Actions → Deploy → Run
+workflow**, or with **Publish website** in the CMS panel. It runs the checks above, then:
 
-| Kind     | Name             | Value                                   |
-| -------- | ---------------- | --------------------------------------- |
-| Variable | `DEPLOY_HOST`    | Server hostname or IP                   |
-| Variable | `DEPLOY_USER`    | SSH user (must be able to run `docker`) |
-| Variable | `DEPLOY_PATH`    | Directory containing `compose.yaml`     |
-| Secret   | `DEPLOY_SSH_KEY` | Private key for that user               |
+1. sends the editable texts to the CMS;
+2. builds with the texts as changed in the CMS. If the CMS can't be reached, the build fails
+   rather than publishing outdated texts;
+3. uploads `dist/` over SFTP. Files no longer in the build are removed from the folder.
 
-### GitHub Pages
+Setup:
 
-The `pages` job deploys the site to GitHub Pages on every push to `main`, once Pages is enabled:
-**Settings → Pages → Build and deployment → Source: GitHub Actions** (private repositories need a paid
-GitHub plan). Until then the job skips with a notice.
+1. In the IONOS control panel, point the domain at its **own folder**, for example
+   `/sites/sotiunion`. The upload replaces everything in that folder.
+2. In this repository, go to **Settings → Environments → production** and add:
 
-The site is served at `https://izzzicos.github.io/soti-union/`; the build reads the URL and sub-path
-from the Pages settings, so links, assets, canonical URLs and the sitemap get the `/soti-union` prefix
-automatically. After adding a custom domain under **Settings → Pages → Custom domain** (and the DNS
-records GitHub lists), the next deployment builds for the domain root instead.
+   | Kind     | Name                 | Value                                                |
+   | -------- | -------------------- | ---------------------------------------------------- |
+   | Variable | `SITE_URL`           | `https://sotiunion.com` (canonical URLs, sitemap)    |
+   | Variable | `CMS_URL`            | `https://admin.suerteksa.com`                        |
+   | Variable | `SFTP_HOST`          | IONOS SFTP host                                      |
+   | Variable | `SFTP_USER`          | IONOS SFTP user                                      |
+   | Variable | `SFTP_PATH`          | The domain's folder, e.g. `/sites/sotiunion`         |
+   | Secret   | `SFTP_PASSWORD`      | IONOS SFTP password                                  |
+   | Secret   | `CONTENT_SYNC_TOKEN` | Same value as `CONTENT_SYNC_TOKEN` in the CMS `.env` |
 
-Pages is static hosting only, so the nginx extras (security headers/CSP, redirects from the old
-site's `.html` URLs, `/healthz`) are not available there — use the Docker image if you need them.
-
-To build for a sub-path locally: `SITE_URL=https://example.com BASE_PATH=/soti-union npm run build`.
-
-If the GHCR package is private, run `docker login ghcr.io` on the server once. Create a
-`production` environment in the repository settings to add approval rules.
+3. Add the site's address to `CORS_ALLOWED_ORIGINS` in the CMS `.env`, so browsers may load
+   the news.
 
 ## Image credits
 
-- Project photos and the workshop hero image: © UAB „SOTI Union“.
+- Project photos: © UAB „SOTI Union“.
 - AIDAprima rendering: © AIDA Cruises, as published on the previous site.
+- Home page photo: [Welder in a workshop](<https://commons.wikimedia.org/wiki/File:Welder_in_a_workshop_(Unsplash).jpg>)
+  by Uğur Gürcüoğlu (Unsplash), **CC0**.
 - Market photos from Wikimedia Commons, all **CC0 / public domain**:
   [Kentish Flats Offshore Wind Farm](https://commons.wikimedia.org/wiki/File:Kentish_Flats_Offshore_Wind_Farm.jpg),
   [Montrose Alpha](https://commons.wikimedia.org/wiki/File:Montrose_Alpha.JPG),

@@ -15,6 +15,7 @@ export const routes = {
   about: "/about/",
   references: "/references/",
   aidaprima: "/references/aidaprima/",
+  news: "/news/",
   career: "/career/",
   contact: "/contact/",
 } as const;
