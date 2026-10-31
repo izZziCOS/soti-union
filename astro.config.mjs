@@ -8,16 +8,43 @@ import { loadEnv } from "vite";
 // CMS_* settings may also come from a local .env file (see .env.example).
 Object.assign(process.env, { ...loadEnv("", process.cwd(), "CMS_"), ...process.env });
 
-/** Writes the Apache configuration (server/htaccess) to dist/.htaccess for IONOS hosting. */
+/**
+ * Writes the Apache configuration (server/htaccess) to dist/.htaccess for IONOS hosting,
+ * and the page link preview crawlers get for news posts (server/news-og.php).
+ */
 function apacheConfig() {
+  /** @type {{ site: string, base: string }} */
+  const target = { site: "", base: "/" };
+
   return {
     name: "apache-config",
     hooks: {
+      /** @param {{ config: import("astro").AstroConfig }} options */
+      "astro:config:done": ({ config }) => {
+        target.site = config.site ?? "";
+        target.base = config.base;
+      },
       /** @param {{ dir: URL }} options */
       "astro:build:done": async ({ dir }) => {
         const template = await readFile(new URL("./server/htaccess", import.meta.url), "utf8");
         const origin = process.env.CMS_URL ? ` ${new URL(process.env.CMS_URL).origin}` : "";
         await writeFile(new URL(".htaccess", dir), template.replaceAll(" %CMS_ORIGIN%", origin));
+
+        const cmsUrl = (process.env.CMS_URL ?? "").replace(/\/+$/, "");
+        const og = await readFile(new URL("./server/news-og.php", import.meta.url), "utf8");
+        /** @type {Record<string, string>} PHP strings in single quotes: URLs and keys, no quotes */
+        const values = {
+          CMS_API: cmsUrl ? `${cmsUrl}/api/v1/${process.env.CMS_SITE ?? "soti"}` : "",
+          SITE_URL: new URL(target.base, target.site).href.replace(/\/+$/, ""),
+          DEFAULT_LOCALE: "en",
+        };
+        for (const value of Object.values(values)) {
+          if (/['\\]/.test(value)) throw new Error(`Unexpected character in ${value}`);
+        }
+        await writeFile(
+          new URL("news-og.php", dir),
+          og.replace(/%(CMS_API|SITE_URL|DEFAULT_LOCALE)%/g, (_, key) => values[key] ?? ""),
+        );
       },
     },
   };

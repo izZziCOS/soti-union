@@ -74,6 +74,7 @@ src/
   assets/images/          source photos (optimized at build time)
 scripts/sync-content.ts   sends the editable texts to the CMS (runs on deploy)
 server/htaccess           Apache configuration, written to dist/.htaccess by the build
+server/news-og.php        link previews of news posts, written to dist/ by the build
 tests/unit/  tests/e2e/
 ```
 
@@ -85,6 +86,19 @@ tests/unit/  tests/e2e/
   It shows on the News page and in the "Latest news" section of the home page, which stays
   hidden while there is no news. The browser loads it from the CMS
   (`/api/v1/soti/news`).
+  - Pictures come in several sizes (`srcset`) and are cropped around the **focal point**
+    set in the CMS media library. The CSP forbids inline styles, so the focal point is
+    rounded to 10 % and applied as one of the classes `global.css` generates. The home page
+    photo is mirrored, and so is its focal point.
+  - A post's search engine title and description replace the page's own once it loads.
+  - **Link previews**: Facebook, LinkedIn and other link preview crawlers do not run
+    JavaScript. `.htaccess` sends them, and only them, from `/news/?post={slug}` to
+    `news-og.php`, which serves the same news page with the post's title, description and
+    picture from the CMS in its head. The link stays on this site. This needs PHP on the
+    web hosting (IONOS includes it); without an answer from the CMS the page is sent as it
+    is. Check a post with the
+    [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) or the
+    [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/).
 - **Page content** (CMS → Page content) holds every text of the site.
   - Company details (phones, emails, address, codes) are entered once for all languages.
   - **Open positions** (`career.positions`) are a list: positions can be added, removed and

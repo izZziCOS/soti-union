@@ -51,13 +51,22 @@ async function mockCms(page: Page, list = posts, status = 200) {
           images: [
             {
               url: `${cmsUrl}/media/hall.jpg`,
-              thumb_url: `${cmsUrl}/media/hall-thumb.webp`,
+              thumb_url: `${cmsUrl}/media/hall-640.webp`,
+              alt: null,
               caption: "The hall",
+              width: 2400,
+              height: 1600,
+              srcset: `${cmsUrl}/media/hall-640.webp 640w, javascript:alert(1) 900w, ${cmsUrl}/media/hall-1280.webp 1280w`,
+              focal: { x: 31, y: 72 },
             },
           ],
           documents: [
             { url: `${cmsUrl}/media/specs.pdf`, name: "Crane specification", size: 245760 },
           ],
+          seo: {
+            title: "Our new 20-tonne crane",
+            description: "The crane serves the whole hall.",
+          },
         },
       },
     }),
@@ -103,7 +112,27 @@ test("a post shows its text, pictures and documents", async ({ page }) => {
     "href",
     localizePath(routes.news, "lt"),
   );
-  await expect(page).toHaveTitle(new RegExp(`^${posts[0]!.title}`));
+  // the post's own title and description for search engines
+  await expect(page).toHaveTitle(/^Our new 20-tonne crane \| /);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "The crane serves the whole hall.",
+  );
+});
+
+test("post pictures come in several sizes, cropped around their focal point", async ({ page }) => {
+  await mockCms(page);
+  await page.goto(`${localizePath(routes.news, "en")}?post=new-crane`);
+
+  const picture = page.locator("article").getByRole("img", { name: "The hall" });
+  await expect(picture).toHaveAttribute(
+    "srcset",
+    `${cmsUrl}/media/hall-640.webp 640w, ${cmsUrl}/media/hall-1280.webp 1280w`,
+  );
+  await expect(picture).toHaveAttribute("sizes", /16rem/);
+  await expect(picture).toHaveClass(/object-\[30%_70%\]/);
+  // the class exists in the stylesheet (the CSP rules out inline styles)
+  await expect(picture).toHaveCSS("object-position", "30% 70%");
 });
 
 test("a missing post and an unreachable CMS show a message", async ({ page }) => {

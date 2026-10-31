@@ -3,6 +3,7 @@
  * - `latest`: the three newest posts; the surrounding section stays hidden if there are none.
  * - `page`: the news list with "show more", or a single post when the URL has ?post=slug.
  */
+import { focalClass, safeSrcset, type CmsImage } from "~/cms/media";
 
 interface Labels {
   loading: string;
@@ -16,11 +17,18 @@ interface Post {
   title: string | null;
   excerpt: string | null;
   published_at: string | null;
-  cover: { url: string; thumb_url: string; alt: string | null } | null;
+  cover: CmsImage | null;
   body?: string | null;
-  images?: { url: string; thumb_url: string; caption: string | null }[];
+  images?: (CmsImage & { caption: string | null })[];
   documents?: { url: string; name: string; size: number | null }[];
+  /** What search engines show; Facebook and LinkedIn get it from news-og.php. */
+  seo?: { title: string | null; description: string | null };
 }
+
+/** How wide the pictures are shown, for choosing from their srcset. */
+const CARD_SIZES = "(min-width: 64rem) 24rem, (min-width: 40rem) 50vw, 100vw";
+const COVER_SIZES = "(min-width: 48rem) 48rem, 100vw";
+const GALLERY_SIZES = "(min-width: 48rem) 16rem, 50vw";
 
 interface Page {
   data: Post[];
@@ -59,7 +67,7 @@ export function initNews(root: HTMLElement): void {
     field(node, "title").textContent = post.title ?? "";
     fillOrRemove(field(node, "excerpt"), post.excerpt);
     const cover = field<HTMLImageElement>(node, "cover");
-    if (post.cover) cover.src = post.cover.thumb_url;
+    if (post.cover) showPicture(cover, post.cover, post.cover.thumb_url, CARD_SIZES, api);
     else cover.remove();
     return node;
   };
@@ -151,7 +159,7 @@ export function initNews(root: HTMLElement): void {
 
       const cover = field<HTMLImageElement>(node, "cover");
       if (post.cover) {
-        cover.src = post.cover.url;
+        showPicture(cover, post.cover, post.cover.url, COVER_SIZES, api);
         cover.alt = post.cover.alt ?? "";
       } else cover.remove();
 
@@ -161,8 +169,8 @@ export function initNews(root: HTMLElement): void {
         const item = template(root, "[data-news-picture]");
         field<HTMLAnchorElement>(item, "link").href = image.url;
         const img = field<HTMLImageElement>(item, "image");
-        img.src = image.thumb_url;
-        img.alt = image.caption ?? "";
+        showPicture(img, image, image.thumb_url, GALLERY_SIZES, api);
+        img.alt = image.alt ?? image.caption ?? "";
         fillOrRemove(field(item, "caption"), image.caption);
         pictureList.append(item);
       }
@@ -182,12 +190,50 @@ export function initNews(root: HTMLElement): void {
       container.replaceChildren(node);
       container.hidden = false;
       setStatus("");
-      if (post.title) document.title = `${post.title} | ${document.title.split(" | ").pop()}`;
+      showSeo(post.seo?.title || post.title, post.seo?.description || post.excerpt);
     } catch {
       setStatus(labels.error);
     } finally {
       root.removeAttribute("aria-busy");
     }
+  }
+}
+
+/**
+ * A CMS picture in its sizes (the browser picks one for `sizes`), cropped around the
+ * focal point set in the CMS.
+ */
+function showPicture(
+  img: HTMLImageElement,
+  image: CmsImage,
+  src: string,
+  sizes: string,
+  api: string,
+): void {
+  img.src = src;
+  const srcset = safeSrcset(image.srcset, api);
+  if (srcset) {
+    img.srcset = srcset;
+    img.sizes = sizes;
+  }
+  if (image.width && image.height) {
+    img.width = image.width;
+    img.height = image.height;
+  }
+  const focal = focalClass(image.focal);
+  if (focal) img.classList.add(focal);
+}
+
+/**
+ * The post's title and description in the page head, for search engines (which run
+ * this script) and the browser tab.
+ */
+function showSeo(title: string | null | undefined, description: string | null | undefined): void {
+  if (title) document.title = `${title} | ${document.title.split(" | ").pop()}`;
+  if (description) {
+    document
+      .querySelector<HTMLMetaElement>('meta[name="description"]')
+      ?.setAttribute("content", description);
   }
 }
 

@@ -9,6 +9,14 @@ AddDefaultCharset utf-8
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Link previews of news posts: Facebook, LinkedIn and other link preview crawlers do not
+  # run JavaScript, so for /news/?post=slug they get the news page with the post's title,
+  # description and picture from news-og.php (written by the build). Visitors and search
+  # engines, which run JavaScript, get the static page.
+  RewriteCond %{HTTP_USER_AGENT} (facebookexternalhit|Facebot|LinkedInBot|Twitterbot|Slackbot|WhatsApp|TelegramBot|Discordbot|SkypeUriPreview|Pinterestbot|redditbot|Viber|vkShare|Embedly|Iframely) [NC]
+  RewriteCond %{QUERY_STRING} (?:^|&)post=([A-Za-z0-9_-]+)(?:&|$)
+  RewriteRule ^(?:([a-z]{2})/)?news/?$ news-og.php?post=%1&lang=$1 [L]
+
   # Permanent redirects for URLs of the previous (2015) site. Matched on the original
   # request line, so the internal DirectoryIndex lookup of /index.html is never caught.
   RewriteCond %{THE_REQUEST} \s/((?:lt/|ru/)?)index\.html[\s?#]

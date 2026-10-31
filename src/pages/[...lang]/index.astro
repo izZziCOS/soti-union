@@ -2,7 +2,8 @@
 import type { ImageMetadata } from "astro";
 import { Image } from "astro:assets";
 import { imageUrl } from "~/cms/editable";
-import { remoteContent } from "~/cms/remote";
+import { focalClass } from "~/cms/media";
+import { remoteContent, remoteMedia } from "~/cms/remote";
 import CtaBand from "~/components/CtaBand.astro";
 import Icon, { type IconName } from "~/components/Icon.astro";
 import NewsFeed from "~/components/NewsFeed.astro";
@@ -30,9 +31,14 @@ export function getStaticPaths() {
 const locale = resolveLocale(Astro.params.lang);
 const t = useTranslations(locale);
 
-// A photo uploaded in the CMS replaces the repository one; Astro downloads and optimizes it.
+// A photo chosen in the CMS replaces the repository one; Astro downloads and optimizes it.
+// It is cropped around the focal point set in the CMS, and described as it says there.
+// The hero is mirrored, so the focal point is too.
 const heroUrl = imageUrl(remoteContent?.[defaultLocale], "home.hero.image");
+const heroMedia = heroUrl ? remoteMedia?.[locale]?.["home.hero.image"] : undefined;
 const heroImage = heroUrl ? { src: heroUrl, inferSize: true as const } : { src: hero };
+const heroFocal = heroMedia?.focal ? { x: 100 - heroMedia.focal.x, y: heroMedia.focal.y } : null;
+const heroPosition = heroUrl ? (focalClass(heroFocal) ?? "object-center") : "object-[30%_center]";
 
 const marketImages: Record<string, ImageMetadata> = {
   shipbuilding,
@@ -68,12 +74,12 @@ const jsonLd = {
   <section class="relative isolate overflow-hidden bg-brand-950">
     <Image
       {...heroImage}
-      alt={t.home.hero.imageAlt}
+      alt={heroMedia?.alt || t.home.hero.imageAlt}
       widths={[640, 1024, 1600, 2000]}
       sizes="100vw"
       loading="eager"
       fetchpriority="high"
-      class="absolute inset-0 -z-10 size-full -scale-x-100 object-cover object-[30%_center]"
+      class={`absolute inset-0 -z-10 size-full -scale-x-100 object-cover ${heroPosition}`}
     />
     <div class="absolute inset-0 -z-10 bg-gradient-to-r from-brand-950 via-brand-950/85 to-brand-950/20"></div>
     <div class="container-page flex min-h-[78dvh] flex-col justify-center py-24 lg:py-32">
