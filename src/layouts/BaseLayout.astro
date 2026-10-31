@@ -4,6 +4,7 @@ import type { ImageMetadata } from "astro";
 import { getImage } from "astro:assets";
 import Footer from "~/components/Footer.astro";
 import Header from "~/components/Header.astro";
+import { cms } from "~/cms/env";
 import { company } from "~/data/company";
 import {
   defaultLocale,
@@ -56,6 +57,14 @@ const og = await getImage({ src: ogImage, width: 1200, height: 630, fit: "cover"
     <link rel="icon" href={withBase("/favicon.svg")} type="image/svg+xml" />
     <link rel="apple-touch-icon" href={withBase("/apple-touch-icon.png")} />
     <link rel="sitemap" href={withBase("/sitemap-index.xml")} />
+    {cms.url && (
+      <link
+        rel="alternate"
+        type="application/rss+xml"
+        title={`${company.name} news`}
+        href={`${cms.url}/api/v1/${cms.site}/news/feed.xml?lang=${locale}`}
+      />
+    )}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={company.name} />
@@ -70,7 +79,10 @@ const og = await getImage({ src: ogImage, width: 1200, height: 630, fit: "cover"
 
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
   </head>
-  <body class="flex min-h-dvh flex-col">
+  <body
+    class="flex min-h-dvh flex-col"
+    data-visits={cms.url ? `${cms.url}/api/v1/${cms.site}/visits` : undefined}
+  >
     <a
       href="#main"
       class="sr-only z-50 rounded-md bg-spark-500 px-4 py-2 font-semibold text-brand-950 focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -82,5 +94,10 @@ const og = await getImage({ src: ogImage, width: 1200, height: 630, fit: "cover"
       <slot />
     </main>
     <Footer locale={locale} />
+    <script>
+      import { trackVisit } from "~/scripts/visits";
+
+      trackVisit(document.body.dataset["visits"] ?? "");
+    </script>
   </body>
 </html>

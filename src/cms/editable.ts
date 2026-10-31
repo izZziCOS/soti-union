@@ -5,7 +5,8 @@
  * Every string in the translation dictionaries is editable under its dotted path
  * (e.g. `home.hero.title`, `home.stats.0.label`), and so are the company details
  * (`company.email`, …). Lists in `editableLists` are edited as a whole, so items can
- * be added and removed. The repository texts stay the defaults: the deploy sends
+ * be added and removed. Pictures in `editableImages` can be replaced by uploading
+ * a photo; the site keeps its own until one is uploaded. The repository texts stay the defaults: the deploy sends
  * them to the CMS (`npm run content:sync`) and the CMS returns its changes.
  *
  * Imports use `.ts` extensions so the sync script can run this file in plain Node.
@@ -18,6 +19,11 @@ export type ListFieldKind = "text" | "textarea" | "lines";
 export const editableLists = {
   "career.positions": { title: "text", requirements: "lines" },
 } as const satisfies Record<string, Record<string, ListFieldKind>>;
+
+/** Pictures replaceable in the panel. The CMS returns the uploaded photo's URL, or null. */
+export const editableImages = ["home.hero.image"] as const;
+
+export type EditableImage = (typeof editableImages)[number];
 
 /** Strings that are code (icon names, image keys) or screen-reader-only control labels. */
 const notEditable = [
@@ -57,7 +63,7 @@ type ListItem = Record<string, Translated>;
 
 export interface ManifestEntry {
   key: string;
-  type: "text" | "textarea" | "list";
+  type: "text" | "textarea" | "list" | "image";
   translatable: boolean;
   fields?: Record<string, ListFieldKind>;
   default: Translated | ListItem[];
@@ -125,7 +131,17 @@ export function buildManifest(
     });
   }
 
+  for (const key of editableImages) {
+    entries.push({ key, type: "image", translatable: false, default: {} });
+  }
+
   return entries;
+}
+
+/** The URL of a picture uploaded in the CMS panel, or null when the site uses its own. */
+export function imageUrl(values: ContentValues | undefined, key: EditableImage): string | null {
+  const value = values?.[key];
+  return typeof value === "string" && value.trim() !== "" ? value : null;
 }
 
 /** A copy of the dictionary with the CMS texts of one language applied. */

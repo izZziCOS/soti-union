@@ -31,6 +31,10 @@ export default defineConfig({
   build: {
     format: "directory",
   },
+  image: {
+    // Photos uploaded in the CMS are downloaded and optimized at build time.
+    domains: process.env.CMS_URL ? [new URL(process.env.CMS_URL).hostname] : [],
+  },
   integrations: [
     sitemap({
       filter: (page) => !page.includes("/404"),

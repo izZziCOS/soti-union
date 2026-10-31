@@ -5,6 +5,7 @@ import {
   buildManifest,
   editableCompanyFields,
   editableLists,
+  imageUrl,
   type ContentValues,
 } from "~/cms/editable";
 import { companyDefaults } from "~/data/company-defaults";
@@ -122,5 +123,24 @@ describe("applying the CMS texts", () => {
     });
     expect(result.phones.director).toBe("+370 600 00000");
     expect(result.name).toBe(companyDefaults.name);
+  });
+});
+
+describe("pictures replaceable in the CMS", () => {
+  it("offers the home page photo, with no default (the site keeps its own)", () => {
+    expect(entry("home.hero.image")).toEqual({
+      key: "home.hero.image",
+      type: "image",
+      translatable: false,
+      default: {},
+    });
+  });
+
+  it("uses the uploaded photo only when the CMS returns one", () => {
+    expect(
+      imageUrl({ "home.hero.image": "https://cms.test/media/content/a.jpg" }, "home.hero.image"),
+    ).toBe("https://cms.test/media/content/a.jpg");
+    expect(imageUrl({ "home.hero.image": null }, "home.hero.image")).toBeNull();
+    expect(imageUrl(undefined, "home.hero.image")).toBeNull();
   });
 });

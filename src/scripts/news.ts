@@ -16,7 +16,7 @@ interface Post {
   title: string | null;
   excerpt: string | null;
   published_at: string | null;
-  cover: { url: string; thumb_url: string } | null;
+  cover: { url: string; thumb_url: string; alt: string | null } | null;
   body?: string | null;
   images?: { url: string; thumb_url: string; caption: string | null }[];
   documents?: { url: string; name: string; size: number | null }[];
@@ -84,10 +84,17 @@ export function initNews(root: HTMLElement): void {
     return;
   }
 
-  const slug = new URLSearchParams(window.location.search).get("post");
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get("post");
 
   if (slug) {
-    showPost(slug);
+    // a preview of an unpublished post must not end up in search results
+    if (params.has("preview")) {
+      document.head.append(
+        Object.assign(document.createElement("meta"), { name: "robots", content: "noindex" }),
+      );
+    }
+    showPost(slug, params.get("preview"));
   } else {
     showList();
   }
@@ -119,12 +126,16 @@ export function initNews(root: HTMLElement): void {
     void load();
   }
 
-  async function showPost(slug: string): Promise<void> {
+  async function showPost(slug: string, preview: string | null): Promise<void> {
     const container = root.querySelector<HTMLElement>("[data-news-post]")!;
     root.setAttribute("aria-busy", "true");
 
     try {
-      const result = await get<{ data: Post }>(`/news/${encodeURIComponent(slug)}?lang=${locale}`);
+      // A preview link from the CMS (?preview=token) also shows unpublished posts.
+      const path = preview
+        ? `/news/${encodeURIComponent(slug)}/preview?lang=${locale}&token=${encodeURIComponent(preview)}`
+        : `/news/${encodeURIComponent(slug)}?lang=${locale}`;
+      const result = await get<{ data: Post }>(path);
       if (!result) {
         setStatus(labels.notFound);
         return;
@@ -139,8 +150,10 @@ export function initNews(root: HTMLElement): void {
       field(node, "body").innerHTML = post.body ?? "";
 
       const cover = field<HTMLImageElement>(node, "cover");
-      if (post.cover) cover.src = post.cover.url;
-      else cover.remove();
+      if (post.cover) {
+        cover.src = post.cover.url;
+        cover.alt = post.cover.alt ?? "";
+      } else cover.remove();
 
       const pictures = post.images ?? [];
       const pictureList = field(node, "picture-list");
